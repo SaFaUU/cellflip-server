@@ -15,8 +15,17 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const usersCollection = client.db('cellflip').collection('users');
-        app.post('/user', (req, res) => {
+        app.post('/user', async (req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user)
+            res.send(result)
+        })
+        app.get('/user', async (req, res) => {
+            const query = {
 
+            }
+            const result = await usersCollection.find(query).toArray()
+            res.send(result)
         })
     }
     catch {
