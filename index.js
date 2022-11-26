@@ -16,6 +16,30 @@ async function run() {
     try {
         const usersCollection = client.db('cellflip').collection('users');
         const categoriesCollection = client.db('cellflip').collection('categories');
+        const productsCollection = client.db('cellflip').collection('products');
+        app.get('/products', async (req, res) => {
+            const query = {
+
+            }
+            const result = await productsCollection.find(query).toArray();
+            res.send(result)
+        })
+        app.get('/my-products/:user_mail', async (req, res) => {
+            const email = req.params.user_mail;
+            const query = {
+                sellerMail: email
+            }
+            console.log(email)
+            const result = await productsCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        app.post('/products', async (req, res) => {
+            const product = req.body;
+            console.log(product);
+            const result = await productsCollection.insertOne(product);
+            res.send(result)
+        })
         app.post('/user', async (req, res) => {
             const user = req.body;
             const query = {
