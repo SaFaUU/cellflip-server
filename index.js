@@ -15,6 +15,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const usersCollection = client.db('cellflip').collection('users');
+        const categoriesCollection = client.db('cellflip').collection('categories');
         app.post('/user', async (req, res) => {
             const user = req.body;
             const query = {
@@ -31,14 +32,6 @@ async function run() {
             }
         })
 
-        app.get('/admin/:email', async (req, res) => {
-            const user_email = req.params.email;
-            const query = {
-                email: user_email
-            }
-            const user = await usersCollection.findOne(query);
-            res.send(user)
-        })
         app.get('/user/:email', async (req, res) => {
             const user_email = req.params.email;
             const query = {
@@ -53,6 +46,21 @@ async function run() {
 
             }
             const result = await usersCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.post('/add-category', async (req, res) => {
+            const category_name = req.query.category_name;
+            const category = {
+                name: category_name
+            }
+            const result = await categoriesCollection.insertOne(category)
+            res.send(result)
+        })
+        app.get('/categories', async (req, res) => {
+            const query = {
+
+            }
+            const result = await categoriesCollection.find(query).toArray()
             res.send(result)
         })
 
