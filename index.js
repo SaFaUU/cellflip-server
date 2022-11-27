@@ -19,7 +19,7 @@ async function run() {
         const productsCollection = client.db('cellflip').collection('products');
         app.get('/products', async (req, res) => {
             const query = {
-                advertiseEnable: false
+                advertiseEnable: true
             }
             const result = await productsCollection.find(query).limit(6).toArray();
             res.send(result)
@@ -29,7 +29,7 @@ async function run() {
             const query = {
                 sellerMail: email
             }
-            console.log(email)
+            console.log('Inside /my-products/:user_mail', email)
             const result = await productsCollection.find(query).toArray();
             res.send(result)
         })
@@ -47,6 +47,52 @@ async function run() {
                 }
             }
             const result = await productsCollection.updateOne(filter, updatedProduct, option);
+            res.send(result)
+        })
+        app.put('/report/:id', async (req, res) => {
+            console.log(req.params.id)
+            const id = req.params.id;
+            const filter = {
+                _id: ObjectId(id)
+            }
+            const option = { upsert: true }
+            const updatedProduct = {
+                $set: {
+                    reported: true
+                }
+            }
+            const result = await productsCollection.updateOne(filter, updatedProduct, option);
+            res.send(result)
+        })
+        app.get('/report', async (req, res) => {
+            const query = {
+                reported: true
+            }
+            const result = await productsCollection.find(query).toArray();
+            res.send(result)
+        })
+        app.put('/verify/:user_email', async (req, res) => {
+            console.log(req.params.user_email)
+            const email = req.params.user_email;
+            const filter = {
+                email: email
+            }
+            const option = { upsert: true }
+            const updatedUser = {
+                $set: {
+                    verified: true
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedUser, option);
+            res.send(result)
+        })
+        app.delete('/products/:id', async (req, res) => {
+            console.log(req.params.id)
+            const id = req.params.id;
+            const query = {
+                _id: ObjectId(id)
+            }
+            const result = await productsCollection.deleteOne(query);
             res.send(result)
         })
 
