@@ -8,7 +8,7 @@ require('dotenv').config()
 app.use(cors())
 app.use(express.json())
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.1cmhy5v.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -19,9 +19,9 @@ async function run() {
         const productsCollection = client.db('cellflip').collection('products');
         app.get('/products', async (req, res) => {
             const query = {
-
+                advertiseEnable: false
             }
-            const result = await productsCollection.find(query).toArray();
+            const result = await productsCollection.find(query).limit(6).toArray();
             res.send(result)
         })
         app.get('/my-products/:user_mail', async (req, res) => {
@@ -33,6 +33,23 @@ async function run() {
             const result = await productsCollection.find(query).toArray();
             res.send(result)
         })
+        app.put('/my-products/:id', async (req, res) => {
+            console.log(req.params.id)
+            const id = req.params.id;
+            const filter = {
+                _id: ObjectId(id)
+            }
+            const option = { upsert: true }
+            const product = req.body;
+            const updatedProduct = {
+                $set: {
+                    advertiseEnable: product.advertiseEnable
+                }
+            }
+            const result = await productsCollection.updateOne(filter, updatedProduct, option);
+            res.send(result)
+        })
+
 
         app.post('/products', async (req, res) => {
             const product = req.body;
