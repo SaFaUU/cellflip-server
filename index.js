@@ -110,6 +110,15 @@ async function run() {
                 }
             }
             const result = await usersCollection.updateOne(filter, updatedUser, option);
+            const productFilter = {
+                sellerMail: email
+            }
+            const updatedProducts = {
+                $set: {
+                    verifiedSeller: true
+                }
+            }
+            const productResult = await productsCollection.updateMany(productFilter, updatedProducts, option);
             res.send(result)
         })
         app.delete('/products/:id', async (req, res) => {
@@ -258,7 +267,7 @@ async function run() {
             });
         });
 
-        app.get('/category/:id', verifyJWT, async (req, res) => {
+        app.get('/category/:id', async (req, res) => {
             const category_id = req.params.id;
             console.log(category_id)
             const query = {
