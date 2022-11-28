@@ -43,7 +43,7 @@ async function run() {
             res.send({ token });
         });
 
-        app.get('/products', verifyJWT, async (req, res) => {
+        app.get('/products', async (req, res) => {
             const query = {
                 advertiseEnable: true
             }
@@ -202,7 +202,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/categories', verifyJWT, async (req, res) => {
+        app.get('/categories', async (req, res) => {
             const query = {
 
             }
@@ -210,7 +210,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/user', verifyJWT, async (req, res) => {
+        app.get('/user', async (req, res) => {
             const role = req.query.role;
             const query = {
                 role: role
