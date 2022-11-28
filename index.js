@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+
 const app = express();
 const port = process.env.PORT || 5000;
 
 require('dotenv').config()
-
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 app.use(cors())
 app.use(express.json())
 
@@ -18,6 +19,7 @@ async function run() {
         const categoriesCollection = client.db('cellflip').collection('categories');
         const productsCollection = client.db('cellflip').collection('products');
         const bookingsCollection = client.db('cellflip').collection('bookings');
+        const paymentDataCollection = client.db('cellflip').collection('paymentData');
         app.get('/products', async (req, res) => {
             const query = {
                 advertiseEnable: true
@@ -104,12 +106,7 @@ async function run() {
             const result = await productsCollection.insertOne(product);
             res.send(result)
         })
-        app.post('/bookings', async (req, res) => {
-            const bookingData = req.body;
-            console.log(bookingData);
-            const result = await bookingsCollection.insertOne(bookingData);
-            res.send(result)
-        })
+
 
         app.post('/user', async (req, res) => {
             const user = req.body;
@@ -151,6 +148,37 @@ async function run() {
             const result = await categoriesCollection.insertOne(category)
             res.send(result)
         })
+        app.post('/payments', async (req, res) => {
+            const paymentData = req.body;
+            console.log(paymentData);
+            const result = await paymentDataCollection.insertOne(paymentData);
+
+            const option = { upsert: true }
+            const bookingFilter = {
+                _id: ObjectId(paymentData.bookingId)
+            }
+            const updatedBookingData = {
+                $set: {
+                    paid: true
+                }
+            }
+            const bookingResult = await bookingsCollection.updateOne(bookingFilter, updatedBookingData, option);
+
+            const productFilter = {
+                _id: ObjectId(paymentData.productId)
+            }
+
+            const updatedProductData = {
+                $set: {
+                    availability: 'sold',
+                    advertiseEnable: false,
+                }
+            }
+            const productResult = await productsCollection.updateOne(productFilter, updatedProductData, option);
+
+            res.send(result)
+        })
+
         app.get('/categories', async (req, res) => {
             const query = {
 
@@ -176,13 +204,44 @@ async function run() {
             const result = await bookingsCollection.find(query).toArray()
             res.send(result)
         })
+        app.post('/bookings', async (req, res) => {
+            const bookingData = req.body;
+            console.log(bookingData);
+            const result = await bookingsCollection.insertOne(bookingData);
+            res.send(result)
+        })
+
+        app.get('/booking/:id', async (req, res) => {
+            const bookedProductId = req.params.id;
+            console.log(bookedProductId)
+            const query = {
+                productId: bookedProductId
+            }
+            const result = await bookingsCollection.findOne(query)
+            res.send(result)
+        })
+        app.post("/create-payment-intent", async (req, res) => {
+            const bookingPriceData = req.body;
+            const price = bookingPriceData.price;
+            console.log(price)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: price,
+                currency: "usd",
+                "payment_method_types": [
+                    "card"],
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
         app.get('/category/:id', async (req, res) => {
             const category_id = req.params.id;
-            console.log(email)
+            console.log(category_id)
             const query = {
-                email: email
+                category: category_id
             }
-            const result = await bookingsCollection.find(query).toArray()
+            const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
     }
