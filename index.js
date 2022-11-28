@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -13,6 +14,22 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.1cmhy5v.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).send({ message: 'Unauthorized Access' });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            res.status(401).send({ message: 'Forbidden Access' });
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         const usersCollection = client.db('cellflip').collection('users');
@@ -20,14 +37,20 @@ async function run() {
         const productsCollection = client.db('cellflip').collection('products');
         const bookingsCollection = client.db('cellflip').collection('bookings');
         const paymentDataCollection = client.db('cellflip').collection('paymentData');
-        app.get('/products', async (req, res) => {
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+            res.send({ token });
+        });
+
+        app.get('/products', verifyJWT, async (req, res) => {
             const query = {
                 advertiseEnable: true
             }
             const result = await productsCollection.find(query).limit(6).toArray();
             res.send(result)
         })
-        app.get('/my-products/:user_mail', async (req, res) => {
+        app.get('/my-products/:user_mail', verifyJWT, async (req, res) => {
             const email = req.params.user_mail;
             const query = {
                 sellerMail: email
@@ -36,7 +59,7 @@ async function run() {
             const result = await productsCollection.find(query).toArray();
             res.send(result)
         })
-        app.put('/my-products/:id', async (req, res) => {
+        app.put('/my-products/:id', verifyJWT, async (req, res) => {
             console.log(req.params.id)
             const id = req.params.id;
             const filter = {
@@ -148,7 +171,7 @@ async function run() {
             const result = await categoriesCollection.insertOne(category)
             res.send(result)
         })
-        app.post('/payments', async (req, res) => {
+        app.post('/payments', verifyJWT, async (req, res) => {
             const paymentData = req.body;
             console.log(paymentData);
             const result = await paymentDataCollection.insertOne(paymentData);
@@ -179,7 +202,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/categories', async (req, res) => {
+        app.get('/categories', verifyJWT, async (req, res) => {
             const query = {
 
             }
@@ -187,7 +210,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyJWT, async (req, res) => {
             const role = req.query.role;
             const query = {
                 role: role
@@ -195,7 +218,7 @@ async function run() {
             const result = await usersCollection.find(query).toArray()
             res.send(result)
         })
-        app.get('/my-orders', async (req, res) => {
+        app.get('/my-orders', verifyJWT, async (req, res) => {
             const email = req.params.email;
             console.log(email)
             const query = {
@@ -204,14 +227,14 @@ async function run() {
             const result = await bookingsCollection.find(query).toArray()
             res.send(result)
         })
-        app.post('/bookings', async (req, res) => {
+        app.post('/bookings', verifyJWT, async (req, res) => {
             const bookingData = req.body;
             console.log(bookingData);
             const result = await bookingsCollection.insertOne(bookingData);
             res.send(result)
         })
 
-        app.get('/booking/:id', async (req, res) => {
+        app.get('/booking/:id', verifyJWT, async (req, res) => {
             const bookedProductId = req.params.id;
             console.log(bookedProductId)
             const query = {
@@ -220,7 +243,7 @@ async function run() {
             const result = await bookingsCollection.findOne(query)
             res.send(result)
         })
-        app.post("/create-payment-intent", async (req, res) => {
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
             const bookingPriceData = req.body;
             const price = bookingPriceData.price;
             console.log(price)
@@ -235,7 +258,7 @@ async function run() {
             });
         });
 
-        app.get('/category/:id', async (req, res) => {
+        app.get('/category/:id', verifyJWT, async (req, res) => {
             const category_id = req.params.id;
             console.log(category_id)
             const query = {
