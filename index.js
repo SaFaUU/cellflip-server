@@ -17,6 +17,7 @@ async function run() {
         const usersCollection = client.db('cellflip').collection('users');
         const categoriesCollection = client.db('cellflip').collection('categories');
         const productsCollection = client.db('cellflip').collection('products');
+        const bookingsCollection = client.db('cellflip').collection('bookings');
         app.get('/products', async (req, res) => {
             const query = {
                 advertiseEnable: true
@@ -103,6 +104,13 @@ async function run() {
             const result = await productsCollection.insertOne(product);
             res.send(result)
         })
+        app.post('/bookings', async (req, res) => {
+            const bookingData = req.body;
+            console.log(bookingData);
+            const result = await bookingsCollection.insertOne(bookingData);
+            res.send(result)
+        })
+
         app.post('/user', async (req, res) => {
             const user = req.body;
             const query = {
@@ -157,6 +165,24 @@ async function run() {
                 role: role
             }
             const result = await usersCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.get('/my-orders', async (req, res) => {
+            const email = req.params.email;
+            console.log(email)
+            const query = {
+                email: email
+            }
+            const result = await bookingsCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.get('/category/:id', async (req, res) => {
+            const category_id = req.params.id;
+            console.log(email)
+            const query = {
+                email: email
+            }
+            const result = await bookingsCollection.find(query).toArray()
             res.send(result)
         })
     }
